@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Software Design Automation Workbench</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Markdown Renderer -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/lib/marked.umd.min.js"></script>
+    <!-- jsPDF for PDF Download -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- html2canvas for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Font Awesome Icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      * {
+        font-family: "Inter", sans-serif;
+        box-sizing: border-box;
+      }
+
+      html {
+        overflow-x: hidden;
+        width: 100%;
+      }
+
+      body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        position: relative;
+        overflow-x: hidden;
+        width: 100%;
+        max-width: 100vw;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: radial-gradient(
+            circle at 20% 50%,
+            rgba(120, 119, 198, 0.3),
+            transparent 50%
+          ),
+          radial-gradient(
+            circle at 80% 80%,
+            rgba(138, 43, 226, 0.3),
+            transparent 50%
+          ),
+          radial-gradient(
+            circle at 40% 20%,
+            rgba(72, 61, 139, 0.2),
+            transparent 50%
+          );
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      .container-main {
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
+      }
+
+      .glass-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15),
+          0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        width: 100%;
+        max-width: 100%;
+        overflow: hidden;
+      }
+
+      .glass-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.2),
+          0 0 0 1px rgba(255, 255, 255, 0.2) inset;
+      }
+
+      .gradient-text {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .btn-primary::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.3),
+          transparent
+        );
+        transition: left 0.5s;
+      }
+
+      .btn-primary:hover::before {
+        left: 100%;
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 15px 40px rgba(102, 126, 234, 0.5);
+      }
+
+      .btn-primary:active {
+        transform: translateY(0);
+      }
+
+      .input-field {
+        border: 2px solid rgba(102, 126, 234, 0.2);
+        transition: all 0.3s ease;
+        background: rgba(255, 255, 255, 0.9);
+      }
+
+      .input-field:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        outline: none;
+        background: white;
+      }
+
+      #output {
+        white-space: normal;
+        word-wrap: break-word;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        line-height: 1.7;
+        max-width: 100%;
+        overflow-x: hidden;
+      }
+
+      #output * {
+        max-width: 100%;
+        word-wrap: break-word;
+        word-break: break-word;
+        overflow-wrap: break-word;
+      }
+
+      #output h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 3px solid rgba(102, 126, 234, 0.2);
+        overflow-wrap: break-word;
+        word-break: break-word;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      #output h2::before {
+        content: "▸";
+        color: #667eea;
+        font-size: 1.2em;
+        flex-shrink: 0;
+      }
+
+      #output h3 {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #764ba2;
+        margin-top: 1.5rem;
+        margin-bottom: 0.75rem;
+        overflow-wrap: break-word;
+        word-break: break-word;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      #output h3::before {
+        content: "•";
+        color: #667eea;
+        font-size: 1.5em;
+        flex-shrink: 0;
+      }
+
+      #output p {
+        margin-bottom: 1rem;
+        color: #4a5568;
+        overflow-wrap: break-word;
+        word-break: break-word;
+      }
+
+      #output pre {
+        background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+        color: #e2e8f0;
+        padding: 1.5rem;
+        border-radius: 1rem;
+        overflow-x: auto;
+        overflow-y: hidden;
+        margin: 1.5rem 0;
+        font-size: 0.9rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(102, 126, 234, 0.3);
+        max-width: 100%;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        word-break: break-all;
+      }
+
+      #output ul {
+        list-style: none;
+        margin-left: 0;
+        padding-left: 0;
+        overflow-wrap: break-word;
+        word-break: break-word;
+      }
+
+      #output ul li {
+        padding-left: 1.5rem;
+        margin-bottom: 0.5rem;
+        position: relative;
+        overflow-wrap: break-word;
+        word-break: break-word;
+      }
+
+      #output ul li::before {
+        content: "▸";
+        position: absolute;
+        left: 0;
+        color: #667eea;
+        font-weight: bold;
+      }
+
+      #output code {
+        background: rgba(102, 126, 234, 0.1);
+        padding: 0.2rem 0.5rem;
+        border-radius: 0.3rem;
+        color: #764ba2;
+        font-size: 0.9em;
+        word-wrap: break-word;
+        word-break: break-all;
+        overflow-wrap: break-word;
+        white-space: pre-wrap;
+      }
+
+      #output pre code {
+        background: transparent;
+        padding: 0;
+        color: #e2e8f0;
+        word-wrap: break-word;
+        word-break: break-all;
+        overflow-wrap: break-word;
+      }
+
+      #output table {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+        display: block;
+        border-collapse: collapse;
+      }
+
+      #output table td,
+      #output table th {
+        word-wrap: break-word;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        max-width: 300px;
+        padding: 0.5rem;
+      }
+      @keyframes dots {
+        0%,
+        20% {
+          opacity: 0;
+        }
+        40% {
+          opacity: 1;
+        }
+        60%,
+        100% {
+          opacity: 0;
+        }
+      }
+      .dot {
+        animation: dots 1.4s infinite;
+        display: inline-block;
+      }
+      .dot:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+      .dot:nth-child(3) {
+        animation-delay: 0.4s;
+      }
+      .action-btn {
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+      }
+      .action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+      }
+      .action-btn:active {
+        transform: translateY(0);
+      }
+      .action-btn i {
+        font-size: 1.1em;
+      }
+      .section-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 0.75rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        font-weight: 700;
+        font-size: 1.2rem;
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        flex-shrink: 0;
+      }
+      @keyframes float {
+        0%,
+        100% {
+          transform: translateY(0px);
+        }
+        50% {
+          transform: translateY(-10px);
+        }
+      }
+      .float-animation {
+        animation: float 3s ease-in-out infinite;
+      }
+      .empty-state {
+        color: #a0aec0;
+        font-style: italic;
+      }
+
+      /* Responsive Styles */
+
+      /* Mobile First - Base styles for small screens */
+      @media (max-width: 640px) {
+        body {
+          padding: 0.75rem !important;
+        }
+
+        .container-main {
+          padding: 0;
+        }
+
+        h1 {
+          font-size: 2rem !important;
+          line-height: 1.2;
+        }
+
+        .text-6xl {
+          font-size: 3rem !important;
+        }
+
+        .glass-card {
+          padding: 1rem !important;
+          border-radius: 1.5rem !important;
+        }
+
+        .section-badge {
+          width: 2rem;
+          height: 2rem;
+          font-size: 1rem;
+        }
+
+        h2 {
+          font-size: 1.25rem !important;
+        }
+
+        #requirementsInput {
+          font-size: 0.9rem;
+          padding: 0.875rem;
+        }
+
+        .btn-primary {
+          width: 100%;
+          padding: 0.875rem 1.5rem !important;
+          font-size: 1rem !important;
+        }
+
+        .action-btn {
+          flex: 1 1 100%;
+          padding: 0.75rem 1rem !important;
+          font-size: 0.875rem;
+          text-align: center;
+        }
+
+        #output {
+          padding: 1rem !important;
+          font-size: 0.9rem;
+        }
+
+        #output h2 {
+          font-size: 1.25rem !important;
+        }
+
+        #output h3 {
+          font-size: 1rem !important;
+        }
+
+        #output pre {
+          padding: 1rem !important;
+          font-size: 0.8rem !important;
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+        }
+
+        #output ul li {
+          padding-left: 1rem;
+          font-size: 0.9rem;
+        }
+
+        .float-animation {
+          animation: none; /* Disable animation on mobile for better performance */
+        }
+      }
+
+      /* Tablet styles */
+      @media (min-width: 641px) and (max-width: 1024px) {
+        .container-main {
+          max-width: 90%;
+        }
+
+        h1 {
+          font-size: 3rem !important;
+        }
+
+        .glass-card {
+          padding: 1.5rem !important;
+        }
+
+        .btn-primary {
+          padding: 0.875rem 2rem !important;
+        }
+
+        #output {
+          padding: 1.5rem !important;
+        }
+
+        #output pre {
+          font-size: 0.85rem;
+        }
+      }
+
+      /* Large tablets and small desktops */
+      @media (min-width: 1025px) and (max-width: 1280px) {
+        .container-main {
+          max-width: 95%;
+        }
+      }
+
+      /* Extra small mobile devices (320px and below) */
+      @media (max-width: 375px) {
+        h1 {
+          font-size: 1.5rem !important;
+        }
+
+        .text-xl {
+          font-size: 0.9rem !important;
+        }
+
+        .text-6xl {
+          font-size: 2.5rem !important;
+        }
+
+        .glass-card {
+          padding: 0.875rem !important;
+        }
+
+        h2 {
+          font-size: 1.1rem !important;
+        }
+
+        #output {
+          min-height: 200px !important;
+        }
+      }
+
+      /* Landscape orientation adjustments */
+      @media (max-width: 926px) and (orientation: landscape) {
+        body {
+          padding: 0.5rem !important;
+        }
+
+        h1 {
+          font-size: 2.5rem !important;
+          margin-bottom: 0.5rem !important;
+        }
+
+        .float-animation {
+          animation: none;
+        }
+
+        .text-6xl {
+          font-size: 2.5rem !important;
+          margin-bottom: 0.5rem !important;
+        }
+
+        .glass-card {
+          margin-bottom: 1rem !important;
+        }
+      }
+
+      /* High DPI screens */
+      @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+        body::before {
+          will-change: transform;
+        }
+      }
+
+      /* Improve touch targets for mobile */
+      @media (hover: none) and (pointer: coarse) {
+        button,
+        .action-btn {
+          min-height: 44px;
+          min-width: 44px;
+        }
+      }
+
+      /* Print styles */
+      @media print {
+        body {
+          background: white;
+        }
+
+        body::before {
+          display: none;
+        }
+
+        .glass-card {
+          box-shadow: none;
+          border: 1px solid #e0e0e0;
+        }
+
+        button {
+          display: none;
+        }
+
+        #outputActions {
+          display: none !important;
+        }
+      }
+    </style>
+  </head>
+
+  <body class="p-4 md:p-8">
+    <div class="container-main max-w-5xl mx-auto">
+      <div class="text-center mb-12 float-animation">
+        <div class="inline-block mb-4">
+          <div class="text-6xl mb-2">
+            <i
+              class="fas fa-drafting-compass"
+              style="color: white; text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3)"
+            ></i>
+          </div>
+        </div>
+        <h1
+          class="text-5xl md:text-6xl font-extrabold text-white mb-4 drop-shadow-2xl"
+        >
+          Software Design Automation
+        </h1>
+        <p class="text-xl text-white/90 font-light tracking-wide">
+          Transform your ideas into professional architecture blueprints
+          instantly
+        </p>
+      </div>
+
+      <div class="glass-card p-6 sm:p-8 rounded-3xl mb-8">
+        <div
+          class="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6"
+        >
+          <div class="section-badge">1</div>
+          <h2 class="text-2xl font-bold gradient-text">
+            Define Your Requirements
+          </h2>
+        </div>
+
+        <textarea
+          id="requirementsInput"
+          rows="7"
+          class="input-field w-full p-5 rounded-2xl text-base resize-none"
+          placeholder="Describe your system requirements here..."
+        ></textarea>
+
+        <button
+          id="generateBtn"
+          onclick="generateArchitecture()"
+          class="btn-primary mt-6 w-full sm:w-auto px-10 py-4 text-white font-bold rounded-2xl text-lg"
+        >
+          <span class="relative z-10"
+            ><i class="fas fa-magic mr-2"></i>Generate Architecture</span
+          >
+        </button>
+      </div>
+
+      <div class="glass-card p-6 sm:p-8 rounded-3xl">
+        <div class="flex items-center justify-between mb-6 flex-wrap gap-4">
+          <div class="flex items-center gap-4">
+            <div class="section-badge">2</div>
+            <h2 class="text-2xl font-bold gradient-text">
+              Your Architecture Blueprint
+            </h2>
+          </div>
+          <span
+            id="loadingIndicator"
+            class="hidden text-base font-semibold gradient-text"
+          >
+            Designing<span class="dot">.</span><span class="dot">.</span
+            ><span class="dot">.</span>
+          </span>
+        </div>
+
+        <div
+          id="output"
+          class="min-h-[300px] bg-gradient-to-br from-gray-50 to-white p-6 rounded-2xl text-gray-800 text-base border border-gray-100"
+        >
+          <p class="empty-state text-center py-12">
+            <i
+              class="fas fa-sitemap text-4xl mb-3 block"
+              style="color: #a0aec0"
+            ></i>
+            Your architecture blueprint will appear here once generated
+          </p>
+        </div>
+
+        <div id="outputActions" class="mt-6 flex flex-wrap gap-3 hidden">
+          <button
+            onclick="copyOutput()"
+            class="action-btn px-6 py-3 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 font-semibold"
+          >
+            <i class="fas fa-clipboard mr-2"></i>Copy to Clipboard
+          </button>
+          <button
+            onclick="downloadPDF()"
+            class="action-btn px-6 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 font-semibold"
+          >
+            <i class="fas fa-file-pdf mr-2"></i>Download PDF
+          </button>
+        </div>
+      </div>
+
+      <div class="text-center mt-12 text-white/70 text-sm">
+        <p>Powered by Advanced AI Architecture Design</p>
+      </div>
+    </div>
+
+    <script type="module">
+      const apiKey = "AIzaSyCskJ8cF01tMghQ5WMFKHPvdUSGxkxodak";
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+      const requirementsInput = document.getElementById("requirementsInput");
+      const generateBtn = document.getElementById("generateBtn");
+      const outputDiv = document.getElementById("output");
+      const loadingIndicator = document.getElementById("loadingIndicator");
+      const outputActions = document.getElementById("outputActions");
+
+      async function fetchWithRetry(fn, maxRetries = 3) {
+        for (let i = 0; i < maxRetries; i++) {
+          try {
+            return await fn();
+          } catch (error) {
+            if (i === maxRetries - 1) throw error;
+            const delay = Math.pow(2, i) * 1000 + Math.random() * 1000;
+            await new Promise((res) => setTimeout(res, delay));
+          }
+        }
+        throw new Error("Max retries exceeded");
+      }
+
+      window.copyOutput = function () {
+        navigator.clipboard.writeText(outputDiv.innerText);
+        const btn = event.target.closest("button");
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check mr-2"></i>Copied Successfully!';
+        btn.classList.add("bg-emerald-600");
+        setTimeout(() => {
+          btn.innerHTML = originalText;
+          btn.classList.remove("bg-emerald-600");
+        }, 2000);
+      };
+
+      window.downloadPDF = async function () {
+        const { jsPDF } = window.jspdf;
+        const outputElement = document.getElementById("output");
+
+        // Show processing indicator
+        const btn = event.target.closest("button");
+        const originalText = btn.innerHTML;
+        btn.innerHTML =
+          '<i class="fas fa-spinner fa-spin mr-2"></i>Generating PDF...';
+        btn.classList.add("bg-blue-600");
+
+        try {
+          // Create a clean clone for PDF generation
+          const clone = outputElement.cloneNode(true);
+          clone.style.width = "800px"; // Fixed width for better quality
+          clone.style.padding = "40px";
+          clone.style.background = "white";
+          document.body.appendChild(clone);
+
+          // Generate PDF
+          const canvas = await html2canvas(clone, {
+            scale: 2, // Increased scale for better quality
+            useCORS: true,
+            backgroundColor: "#ffffff",
+          });
+
+          document.body.removeChild(clone);
+
+          // Create PDF
+          const imgData = canvas.toDataURL("image/png", 1.0);
+
+          // Use a larger page size and scale content appropriately
+          const pageWidth = 595.28; // A4 width in points
+          const scaleFactor = pageWidth / canvas.width;
+          const pageHeight = canvas.height * scaleFactor;
+
+          const pdf = new jsPDF({
+            orientation: "p",
+            unit: "pt",
+            format: [pageWidth, pageHeight],
+          });
+
+          pdf.addImage(imgData, "PNG", 0, 0, pageWidth, pageHeight);
+          pdf.save(`architecture_blueprint_${Date.now()}.pdf`);
+        } catch (error) {
+          console.error("Failed to generate PDF:", error);
+          alert("Failed to generate PDF. Please try again.");
+        } finally {
+          // Restore button state
+          setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.classList.remove("bg-blue-600");
+          }, 2000);
+        }
+      };
+
+      window.generateArchitecture = async function () {
+        const userRequirements = requirementsInput.value.trim();
+        if (!userRequirements) {
+          outputDiv.innerHTML =
+            '<p class="text-red-500 text-center py-8 font-semibold"><i class="fas fa-exclamation-triangle mr-2"></i>Please enter your system requirements to generate an architecture.</p>';
+          return;
+        }
+
+        generateBtn.disabled = true;
+        generateBtn.classList.add("opacity-75", "cursor-not-allowed");
+        loadingIndicator.classList.remove("hidden");
+        outputDiv.innerHTML =
+          '<p class="text-gray-500 text-center py-12 italic"><i class="fas fa-cog fa-spin mr-2"></i>Analyzing requirements and crafting your architecture...</p>';
+        outputActions.classList.add("hidden");
+
+        const systemPrompt = `
+        You are a Senior Cloud Solutions Architect with expertise in modern software design patterns.
+        Based on the user's requirements, generate a comprehensive architecture design in well-formatted Markdown with sections:
+        ## Architecture Overview
+        ## Core Components & Technology Stack
+        ## Project Structure
+        ## Scalability & Trade-offs
+      `;
+
+        const payload = {
+          contents: [
+            { parts: [{ text: `User Requirements: ${userRequirements}` }] },
+          ],
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+        };
+
+        try {
+          const response = await fetchWithRetry(() =>
+            fetch(apiUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            })
+          );
+
+          const result = await response.json();
+          const rawText =
+            result.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+          if (rawText) {
+            outputDiv.innerHTML = marked.parse(rawText);
+            outputActions.classList.remove("hidden");
+          } else {
+            outputDiv.innerHTML = `<p class="text-red-500 text-center py-8 font-semibold"><i class="fas fa-times-circle mr-2"></i>Unable to generate architecture. Please check your API key.</p>`;
+          }
+        } catch (err) {
+          outputDiv.innerHTML = `<p class="text-red-500 text-center py-8"><i class="fas fa-exclamation-circle mr-2"></i><span class="font-bold">Network Error:</span> ${err.message}</p>`;
+        } finally {
+          generateBtn.disabled = false;
+          generateBtn.classList.remove("opacity-75", "cursor-not-allowed");
+          loadingIndicator.classList.add("hidden");
+        }
+      };
+    </script>
+  </body>
+</html>
